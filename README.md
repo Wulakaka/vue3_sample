@@ -28,93 +28,75 @@ npm run lint
 ### Customize configuration
 See [Configuration Reference](https://cli.vuejs.org/config/).
 
-## 安装 postcss-pxtorem
+## 安装 postcss-px-to-viewport
 
 ### 引入依赖
-- ^6.0.0 需要 PostCSS 8
-- 但是使用 PostCSS 8 会报错
-- 需要使用^5.0.0 版本
-- vue-cli 内置了PostCSS，无需再次引入
+
 ```
-npm install postcss-pxtorem@5 --save-dev
+npm install postcss-px-to-viewport --save-dev
 ```
 
 ### 配置 vue.config.js
 - 实际上是在修改 postcss-loader 配置
 - 仍然需要再次引入 autoprefixer，否则不会生效；但是不需要安装
 ```js
-const pxtorem = require("postcss-pxtorem");
 const autoprefixer = require("autoprefixer");
-
+const pxToViewport = require("postcss-px-to-viewport");
 module.exports = {
   css: {
     loaderOptions: {
       postcss: {
         plugins: [
           autoprefixer(),
-          pxtorem({
-            // rootValue: 16,
+          pxToViewport({
+            // unitToConvert: "px",
+            // viewportWidth: 320,
+            viewportWidth: 1920,
             // unitPrecision: 5,
-            // propList: ['font', 'font-size', 'line-height', 'letter-spacing'],
-            propList: ['*']
+            // propList: ["*"],
+            // viewportUnit: "vw",
+            // fontViewportUnit: "vw",
             // selectorBlackList: [],
-            // replace: true,
+            // minPixelValue: 1,
             // mediaQuery: false,
-            // minPixelValue: 0,
-            // exclude: /node_modules/i
-          })
-        ]
-      }
-    }
-  }
-}
-```
-
-### 实现动态更新根元素的 font-size 的方法
-- 增加监听及恢复 body 的 font-size
-- 可以增加防抖或节流
-- 需要恢复 body 的 font-size
-```javascript
-import throttle from "lodash/throttle";
-
-(function (designWidth) {
-  function refreshRootFontSize(designWidth) {
-    const docEl = document.documentElement;
-    const width = docEl.getBoundingClientRect().width;
-    // pxtorem 配置中的 rootValue
-    const rootValue = 16;
-    const rem = (width / designWidth) * rootValue;
-    docEl.style.fontSize = rem + "px";
-  }
-
-  function fixBodyFontSize() {
-    if (document.readyState === "complete") {
-      document.body.style.fontSize = "16px";
-    } else {
-      document.addEventListener(
-        "DOMContentLoaded",
-        function () {
-          document.body.style.fontSize = "16px";
-        },
-        false
-      );
-    }
-  }
-
-  const refresh = throttle(() => refreshRootFontSize(designWidth), 300, true);
-
-  window.addEventListener("resize", refresh, false);
-  // 当一条会话历史记录被执行的时候将会触发页面显示(pageshow)事件。(这包括了后退/前进按钮操作，同时也会在onload 事件触发后初始化页面时触发)
-  window.addEventListener(
-    "pageshow",
-    (e) => {
-      // 如果从缓存中读取
-      if (e.persisted) refresh();
+            // replace: true,
+            // exclude: undefined,
+            // include: undefined,
+            // landscape: false,
+            // landscapeUnit: "vw",
+            // landscapeWidth: 568,
+          }),
+        ],
+      },
     },
-    false
-  );
-  refresh();
-  fixBodyFontSize();
-})(1920);
-
+  },
+};
 ```
+- unitToConvert (String) 需要转换的单位，默认为"px"
+- viewportWidth (Number) 设计稿的视口宽度
+- unitPrecision (Number) 单位转换后保留的精度
+- propList (Array) 能转化为vw的属性列表
+  - 传入特定的CSS属性；
+  - 可以传入通配符""去匹配所有属性，例如：['']；
+  - 在属性的前或后添加"*",可以匹配特定的属性. (例如['position'] 会匹配 background-position-y)
+  - 在特定属性前加 "!"，将不转换该属性的单位 . 例如: ['*', '!letter-spacing']，将不转换letter-spacing
+  - "!" 和 ""可以组合使用， 例如: ['', '!font*']，将不转换font-size以及font-weight等属性
+- viewportUnit (String) 希望使用的视口单位
+- fontViewportUnit (String) 字体使用的视口单位
+- selectorBlackList (Array) 需要忽略的CSS选择器，不会转为视口单位，使用原有的px等单位。
+  - 如果传入的值为字符串的话，只要选择器中含有传入值就会被匹配
+    - 例如 selectorBlackList 为 ['body'] 的话， 那么 .body-class 就会被忽略
+  - 如果传入的值为正则表达式的话，那么就会依据CSS选择器是否匹配该正则
+    - 例如 selectorBlackList 为 [/^body$/] , 那么 body 会被忽略，而 .body 不会
+- minPixelValue (Number) 设置最小的转换数值，如果为1的话，只有大于1的值会被转换
+- mediaQuery (Boolean) 媒体查询里的单位是否需要转换单位
+- replace (Boolean) 是否直接更换属性值，而不添加备用属性
+- exclude (Array or Regexp) 忽略某些文件夹下的文件或特定文件，例如 'node_modules' 下的文件
+  - 如果值是一个正则表达式，那么匹配这个正则的文件会被忽略
+  - 如果传入的值是一个数组，那么数组里的值必须为正则
+- include (Array or Regexp) 如果设置了include，那将只有匹配到的文件才会被转换，例如只转换 'src/mobile' 下的文件 (include: /\/src\/mobile\//)
+  - 如果值是一个正则表达式，将包含匹配的文件，否则将排除该文件
+  - 如果传入的值是一个数组，那么数组里的值必须为正则
+- landscape (Boolean) 是否添加根据 landscapeWidth 生成的媒体查询条件 @media (orientation: landscape)
+- landscapeUnit (String) 横屏时使用的单位
+- landscapeWidth (Number) 横屏时使用的视口宽度
