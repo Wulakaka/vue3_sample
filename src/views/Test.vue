@@ -14,6 +14,7 @@ div {
   width: 100px;
   height: 100px;
   background: aquamarine;
+  font-size: 20px;
 }
 ::placeholder {
   color: red;
