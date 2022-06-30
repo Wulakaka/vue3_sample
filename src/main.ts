@@ -2,7 +2,7 @@ import { createApp } from "vue";
 import App from "./App.vue";
 import router from "./router";
 // 运行时的版本
-import { computed } from "vue/dist/vue.esm-bundler.js";
+import { computed } from "vue";
 
 const app = createApp(App);
 
